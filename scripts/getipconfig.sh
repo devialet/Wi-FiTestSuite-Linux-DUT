@@ -20,10 +20,12 @@
 # $1 is tmp file name
 # $2 is the interface name
 
-echo -n "dhcpcli=" > $1 ; ps ax | grep dhc | cut -f2 -d: | cut -f2 -d' ' | grep dhclient >> $1
-echo ' ' >> $1
-echo -n "mac=" >> $1; ifconfig $2 | grep HWaddr | cut -f3 -dr >> $1 
-echo -n "ipaddr=" >> $1; ifconfig $2 | grep "inet addr" | cut -f2 -d: >> $1 
-echo -n "bcast=" >> $1; ifconfig $2 | grep "inet addr" | cut -f3 -d: >> $1 
-echo -n "mask=" >> $1; ifconfig $2 | grep "inet addr" | cut -f4 -d: >> $1 
-grep nameserver /etc/resolv.conf >> $1 
+out=$1
+if=$2
+
+echo -n "dhcpcli=" > $out; echo `ps -o args ax | awk "/^(\/sbin\/)?(dhclient|udhcpc)/ && / $if( |$)/"` >> $out
+echo -n "mac=" >> $out; echo `ifconfig $if | awk '/(ether|address:|laddr)/{print \$2} /HWaddr/{print \$5}'` >> $out
+echo -n "ipaddr=" >> $out; echo `ifconfig $if | awk -F '[: ]'+ '/inet [1-9]/{print \$3} /inet addr:/{print \$4}'` >> $out
+echo -n "bcast=" >> $out; echo `ifconfig $if | awk -F '[: ]'+ '/inet [1-9]/{print \$7} /inet addr:/{print \$6}'` >> $out
+echo -n "mask=" >> $out; echo `ifconfig $if | awk -F '[: ]'+ '/inet [1-9]/{print \$5} /inet addr:/{print \$8}'` >> $out
+grep nameserver /etc/resolv.conf >> $out
