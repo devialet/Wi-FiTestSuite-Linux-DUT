@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
     struct sockaddr_in servAddr; 
     char *servIP=NULL;
     fd_set sockSet;
-    int slen;
 #endif
+    int slen;
     /* remote port for sending command over tcp */
     unsigned short remoteServPort = 0; 
     unsigned short locPortNo = 0;
@@ -359,16 +359,16 @@ int main(int argc, char *argv[])
         if(retStatus == -1)
             continue;
 
-#if 0
-/*      wfaCtrlSend(gCaSockfd, (BYTE *)respStr, strlen(respStr));  */
-        DPRINT_INFO(WFA_OUT, "%s\n", respStr);
-        DPRINT_INFO(WFA_OUT, "message %s %i\n", xcCmdBuf, nbytes);
+        /* handle CRLF from UCC or from telnet */
         slen = (int )strlen((char *)xcCmdBuf);
-
-        DPRINT_INFO(WFA_OUT, "last %x last-1  %x last-2 %x last-3 %x\n", 
-                        cmdName[slen], cmdName[slen-1], cmdName[slen-2], cmdName[slen-3]);
-        xcCmdBuf[slen-3] = '\0';
-#endif
+/*      DPRINT_INFO(WFA_OUT, "last %d last-1  %d last-2 %d last-3 %d\n",
+                    xcCmdBuf[slen], xcCmdBuf[slen-1], xcCmdBuf[slen-2], xcCmdBuf[slen-3]); */
+        if (slen > 3 && xcCmdBuf[slen-3] == ' ' && xcCmdBuf[slen-2] == '\r' && xcCmdBuf[slen-1] == '\n')
+            xcCmdBuf[slen-3] = '\0';
+        else if (slen > 2 && xcCmdBuf[slen-2] == '\r' && xcCmdBuf[slen-1] == '\n')
+            xcCmdBuf[slen-2] = '\0';
+        else if (slen > 1 && xcCmdBuf[slen-1] == '\n')
+            xcCmdBuf[slen-1] = '\0';
 
         if(CONN_TYPE_TCP ==typeOfConn )
         {
