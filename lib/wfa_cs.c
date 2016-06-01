@@ -1417,7 +1417,7 @@ int wfaDeviceListIF(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
     case IF_ETH:
         infoResp->status = STATUS_COMPLETE;
         ifListResp->iftype = IF_ETH;
-        strcpy(ifListResp->ifs[0], "eth0");
+        strcpy(ifListResp->ifs[0], "wired0");
         strcpy(ifListResp->ifs[1], "NULL");
         strcpy(ifListResp->ifs[2], "NULL");
         break;

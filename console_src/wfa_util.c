@@ -70,15 +70,15 @@ int setup_addr(char *name, struct sockaddr *dst)
 
 #ifndef __CYGWIN__
     printf( "setup_addr: entering\n" );
-    printf("Automatically discover IP Address of eth0 interface, since no broadcast IP address has been specified by you.\n");
+    printf("Automatically discover IP Address of eth0 (wired0) interface, since no broadcast IP address has been specified by you.\n");
     /* tells ioctl which interface to query */
-    strcpy(interface.ifr_name, "eth0");
+    strcpy(interface.ifr_name, "wired0");
     /* need a socket to use ioctl */
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     /* get interface ip address */
     if (ioctl(fd, SIOCGIFADDR, &interface) < 0)
     {
-        perror("ERROR (ioctl (SIOCGIFADDR)), no IP address for eth0");
+        perror("ERROR (ioctl (SIOCGIFADDR)), no IP address for wired0");
         exit(1);
     }
 
