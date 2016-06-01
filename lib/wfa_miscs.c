@@ -99,18 +99,18 @@ int isIpV4Addr(char *str)
         return WFA_SUCCESS;
 }
 
-inline double wfa_timeval2double(struct timeval *tval)
+double wfa_timeval2double(struct timeval *tval)
 {
     return ((double) tval->tv_sec + (double) tval->tv_usec*1e-6);
 }
 
-inline void wfa_double2timeval(struct timeval *tval, double dval)
+void wfa_double2timeval(struct timeval *tval, double dval)
 {
     tval->tv_sec = (long int) dval;
     tval->tv_usec = (long int) ((dval - tval->tv_sec) * 1000000);
 }
 
-inline double wfa_ftime_diff(struct timeval *t1, struct timeval *t2)
+double wfa_ftime_diff(struct timeval *t1, struct timeval *t2)
 {
     double dtime;
 
@@ -155,7 +155,7 @@ int wfa_itime_diff(struct timeval *t1, struct timeval *t2)
  * THe following two functions are converting Little Endian to Big Endian.
  * If your machine is already a Big Endian, you may flag it out.
  */
-inline void int2BuffBigEndian(int val, char *buf)
+void int2BuffBigEndian(int val, char *buf)
 {
     char *littleEn = (char *)&val;
 
