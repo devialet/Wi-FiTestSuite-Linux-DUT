@@ -316,21 +316,6 @@ int wfaStaGetIpConfig(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
     char string[256];
     char *str;
 
-    /*
-     * check a script file (the current implementation specific)
-     */
-    ret = access("/usr/local/sbin/getipconfig.sh", F_OK);
-    if(ret == -1)
-    {
-        ipconfigResp->status = STATUS_ERROR;
-        wfaEncodeTLV(WFA_STA_GET_IP_CONFIG_RESP_TLV, 4, (BYTE *)ipconfigResp, respBuf);
-        *respLen = WFA_TLV_HDR_LEN + 4;
-
-        DPRINT_ERR(WFA_ERR, "file not exist\n");
-        return WFA_FAILURE;
-
-    }
-
     ifinfo->isDhcp = 0;
     strcpy(ifinfo->ipaddr, "none");
     strcpy(ifinfo->mask, "none");
@@ -346,6 +331,14 @@ int wfaStaGetIpConfig(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
     sprintf(gCmdStr, "getipconfig.sh /tmp/ipconfig.txt %s\n", ifname);
 
     sret = system(gCmdStr);
+    if (sret == -1) {
+        ipconfigResp->status = STATUS_ERROR;
+        wfaEncodeTLV(WFA_STA_GET_IP_CONFIG_RESP_TLV, 4, (BYTE *)ipconfigResp, respBuf);
+        *respLen = WFA_TLV_HDR_LEN + 4;
+
+        DPRINT_ERR(WFA_ERR, "cannot run getipconfig.sh\n");
+        return WFA_FAILURE;
+    }
 
     /* open the output result and scan/retrieve the info */
     tmpfd = fopen("/tmp/ipconfig.txt", "r+");
@@ -623,8 +616,16 @@ int wfaStaGetMacAddress(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
     /*
      * run the script "getipconfig.sh" to find out the mac
      */
-    sprintf(gCmdStr, "ifconfig %s > /tmp/ipconfig.txt ", ifname);
+    sprintf(gCmdStr, "getipconfig.sh /tmp/ipconfig.txt %s\n", ifname);
     sret = system(gCmdStr);
+    if (sret == -1) {
+        getmacResp->status = STATUS_ERROR;
+        wfaEncodeTLV(WFA_STA_GET_IP_CONFIG_RESP_TLV, 4, (BYTE *)getmacResp, respBuf);
+        *respLen = WFA_TLV_HDR_LEN + 4;
+
+        DPRINT_ERR(WFA_ERR, "cannot run getipconfig.sh\n");
+        return WFA_FAILURE;
+    }
 
     tmpfd = fopen("/tmp/ipconfig.txt", "r+");
     if(tmpfd == NULL)
