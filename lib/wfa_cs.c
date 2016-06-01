@@ -331,8 +331,12 @@ int wfaStaGetIpConfig(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
 
     }
 
-    strcpy(ifinfo->dns[0], "0");
-    strcpy(ifinfo->dns[1], "0");
+    ifinfo->isDhcp = 0;
+    strcpy(ifinfo->ipaddr, "none");
+    strcpy(ifinfo->mask, "none");
+    for (i = 0; i < WFA_MAX_DNS_NUM; i++)
+        strcpy(ifinfo->dns[i], "none");
+    i = 0;
 
     /*
      * Run the script file "getipconfig.sh" to check the ip status
@@ -362,65 +366,49 @@ int wfaStaGetIpConfig(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
             break;
 
         /* check dhcp enabled */
-        if(strncmp(string, "dhcpcli", 7) ==0)
+        if(strncmp(string, "dhcpcli", 7) == 0)
         {
             str = strtok(string, "=");
-            str = strtok(NULL, "=");
+            str = strtok(NULL, "\n");
             if(str != NULL)
                 ifinfo->isDhcp = 1;
-            else
-                ifinfo->isDhcp = 0;
         }
 
         /* find out the ip address */
         if(strncmp(string, "ipaddr", 6) == 0)
         {
             str = strtok(string, "=");
-            str = strtok(NULL, " ");
+            str = strtok(NULL, "\n");
             if(str != NULL)
             {
-                wSTRNCPY(ifinfo->ipaddr, str, 15);
-
-                ifinfo->ipaddr[15]='\0';
+                wSTRNCPY(ifinfo->ipaddr, str, WFA_IP_ADDR_STR_LEN-1);
+                ifinfo->ipaddr[WFA_IP_ADDR_STR_LEN-1] = '\0';
             }
-            else
-                wSTRNCPY(ifinfo->ipaddr, "none", 15);
         }
 
         /* check the mask */
         if(strncmp(string, "mask", 4) == 0)
         {
-            char ttstr[16];
-            char *ttp = ttstr;
-
-            str = strtok_r(string, "=", &ttp);
-            if(*ttp != '\0')
+            str = strtok(string, "=");
+            str = strtok(NULL, "\n");
+            if(str != NULL)
             {
-                strcpy(ifinfo->mask, ttp);
-                slen = strlen(ifinfo->mask);
-                ifinfo->mask[slen-1] = '\0';
+                wSTRNCPY(ifinfo->mask, str, WFA_IP_MASK_STR_LEN-1);
+                ifinfo->mask[WFA_IP_MASK_STR_LEN-1] = '\0';
             }
-            else
-                strcpy(ifinfo->mask, "none");
         }
 
         /* find out the dns server ip address */
-        if(strncmp(string, "nameserv", 8) == 0)
+        if(strncmp(string, "nameserv", 8) == 0 && i < WFA_MAX_DNS_NUM)
         {
-            char ttstr[16];
-            char *ttp = ttstr;
-
-            str = strtok_r(string, " ", &ttp);
-            if(str != NULL && i < 2)
+            str = strtok(string, " ");
+            str = strtok(NULL, "\n");
+            if(str != NULL)
             {
-                strcpy(ifinfo->dns[i], ttp);
-                slen = strlen(ifinfo->dns[i]);
-                ifinfo->dns[i][slen-1] = '\0';
+                strncpy(ifinfo->dns[i], str, WFA_IP_ADDR_STR_LEN);
+                ifinfo->dns[i][WFA_IP_ADDR_STR_LEN-1] = '\0';
+                i++;
             }
-            else
-                strcpy(ifinfo->dns[i], "none");
-
-            i++;
         }
     }
 
@@ -629,7 +617,7 @@ int wfaStaGetMacAddress(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
     char *ifname = getMac->intf;
 
     FILE *tmpfd;
-    char string[257];
+    char string[256];
 
     DPRINT_INFO(WFA_OUT, "Entering wfaStaGetMacAddress ...\n");
     /*
@@ -649,23 +637,23 @@ int wfaStaGetMacAddress(int len, BYTE *caCmdBuf, int *respLen, BYTE *respBuf)
         return WFA_FAILURE;
     }
 
-    if(fgets((char *)&string[0], 256, tmpfd) == NULL)
+    for(;;)
     {
-        getmacResp->status = STATUS_ERROR;
-    }
+        if(fgets(string, 256, tmpfd) == NULL)
+            break;
 
-    str = strtok(string, " ");
-    while(str && ((strcmp(str,"HWaddr")) != 0))
-    {
-        str = strtok(NULL, " ");
-    }
-
-    /* get mac */
-    if(str)
-    {
-        str = strtok(NULL, " ");
-        strcpy(getmacResp->cmdru.mac, str);
-        getmacResp->status = STATUS_COMPLETE;
+        if(strncmp(string, "mac", 4) == 0)
+        {
+            str = strtok(string, " ");
+            str = strtok(NULL, "\n");
+            if(str != NULL)
+            {
+                strncpy(getmacResp->cmdru.mac, str, WFA_MAC_ADDR_STR_LEN-1);
+                getmacResp->cmdru.mac[WFA_MAC_ADDR_STR_LEN-1] = '\0';
+                getmacResp->status = STATUS_COMPLETE;
+                break;
+            }
+        }
     }
 
     wfaEncodeTLV(WFA_STA_GET_MAC_ADDRESS_RESP_TLV, sizeof(dutCmdResponse_t), (BYTE *)getmacResp, respBuf);
